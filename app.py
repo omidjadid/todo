@@ -4,7 +4,7 @@ import os
 import sqlite3
 
 import jdatetime
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, jsonify, render_template, request, redirect, url_for
 
 
 app = Flask(__name__)
@@ -166,6 +166,10 @@ def update_task(task_id):
     )
     conn.commit()
     conn.close()
+
+    wants_json = "application/json" in (request.headers.get("accept") or "").lower()
+    if wants_json:
+        return jsonify({"ok": True, "task_id": task_id, "progress": progress})
 
     return redirect(url_for("index", date=date))
 

@@ -34,6 +34,56 @@ const DailyTodo = (() => {
   function init() {
     applyProgressBars();
 
+    document.addEventListener("submit", async (e) => {
+      const form = e.target?.closest?.('form[action^="/update/"]');
+      if (!form) return;
+
+      e.preventDefault();
+
+      try {
+        const res = await fetch(form.action, {
+          method: "POST",
+          headers: { Accept: "application/json" },
+          body: new FormData(form),
+        });
+
+        if (!res.ok) {
+          form.submit();
+          return;
+        }
+
+        const data = await res.json();
+        const progress = clampProgress(data?.progress);
+
+        const row = form.closest("tr");
+        if (!row) return;
+
+        const progressText = row.querySelector("[data-progress-text]");
+        if (progressText) progressText.textContent = `${progress}%`;
+
+        const progressFill = row.querySelector(".progress-fill[data-progress]");
+        if (progressFill) {
+          progressFill.dataset.progress = String(progress);
+          progressFill.style.width = `${progress}%`;
+        }
+
+        const statusLabel = row.querySelector("[data-status-label]");
+        if (statusLabel) {
+          if (progress === 100) {
+            statusLabel.classList.remove("doing-label");
+            statusLabel.classList.add("done-label");
+            statusLabel.textContent = "✅ تمام شده";
+          } else {
+            statusLabel.classList.remove("done-label");
+            statusLabel.classList.add("doing-label");
+            statusLabel.textContent = "در حال انجام";
+          }
+        }
+      } catch (_err) {
+        form.submit();
+      }
+    });
+
     document.addEventListener("click", (e) => {
       const startBtn = e.target.closest("[data-start-edit]");
       if (startBtn) {

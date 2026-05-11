@@ -329,7 +329,7 @@
                     </td>
 
                     <td>
-                        <span class="ltr">{{ task.progress }}%</span>
+                        <span class="ltr" data-progress-text>{{ task.progress }}%</span>
                         <div class="progress-bar">
                             <div class="progress-fill" data-progress="{{ task.progress }}"></div>
                         </div>
@@ -337,9 +337,9 @@
 
                     <td class="status-col">
                         {% if task.progress == 100 %}
-                        <span class="done-label">✅ تمام شده</span>
+                        <span data-status-label class="done-label">✅ تمام شده</span>
                         {% else %}
-                        <span class="doing-label">در حال انجام</span>
+                        <span data-status-label class="doing-label">در حال انجام</span>
                         {% endif %}
                     </td>
 
@@ -349,7 +349,7 @@
                                 <input type="hidden" name="date" value="{{ selected_date }}">
                                 <input type="number" name="progress" min="0" max="100" value="{{ task.progress }}"
                                     style="width: 70px;">
-                                <button type="submit">ثبت درصد</button>
+                                <button class="icon-btn" type="submit" title="ثبت درصد" aria-label="ثبت درصد">✓</button>
                             </form>
 
                             <form class="inline-form" method="post" action="/done/{{ task.id }}">
