@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Todo روزانه</title>
+
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 30px;
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #222;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        input,
+        textarea,
+        button {
+            font-family: sans-serif;
+            padding: 9px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            margin: 4px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            min-width: 180px;
+        }
+
+        textarea {
+            width: 90%;
+            min-height: 45px;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            background: #2563eb;
+            color: white;
+        }
+
+        button.delete {
+            background: #dc2626;
+        }
+
+        button.done {
+            background: #16a34a;
+        }
+
+        .stats {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: #f1f5f9;
+            padding: 12px 16px;
+            border-radius: 12px;
+            min-width: 150px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            direction: rtl;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 10px;
+            text-align: right;
+        }
+
+        th {
+            background: #f8fafc;
+        }
+
+        .progress-bar {
+            width: 140px;
+            height: 12px;
+            background: #e5e7eb;
+            border-radius: 999px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #22c55e;
+        }
+
+        .done-label {
+            color: #16a34a;
+            font-weight: bold;
+        }
+
+        .doing-label {
+            color: #ca8a04;
+            font-weight: bold;
+        }
+
+        .note {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .ltr {
+            direction: ltr;
+            display: inline-block;
+        }
+
+        .actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: nowrap;
+            align-items: center;
+        }
+
+        .inline-form {
+            display: inline;
+            margin: 0;
+        }
+
+        .date-col {
+            min-width: 130px;
+            width: 130px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Todo روزانه</h1>
+
+        <form method="get" action="/">
+            <label>نمایش تاریخ:</label>
+            <input type="text" name="date" value="{{ selected_date }}" placeholder="مثلا 1405-02-21">
+            <button type="submit">نمایش</button>
+            <a href="/?date={{ today }}">امروز</a>
+        </form>
+
+        <div class="stats">
+            <div class="stat-card">
+                تعداد کارها:
+                <strong>{{ total_count }}</strong>
+            </div>
+
+            <div class="stat-card">
+                کامل‌شده:
+                <strong>{{ done_count }}</strong>
+            </div>
+
+            <div class="stat-card">
+                میانگین پیشرفت:
+                <strong>{{ "%.1f"|format(avg_progress) }}%</strong>
+            </div>
+        </div>
+
+        <hr>
+
+        <h2>افزودن کار جدید</h2>
+
+        <form method="post" action="/add">
+            <input type="text" name="title" placeholder="عنوان کار" required>
+            <input type="text" name="date" value="{{ selected_date }}" placeholder="تاریخ شمسی">
+            <input type="number" name="progress" min="0" max="100" value="0" placeholder="درصد">
+            <br>
+            <textarea name="note" placeholder="یادداشت اختیاری"></textarea>
+            <br>
+            <button type="submit">افزودن</button>
+        </form>
+
+        <hr>
+
+        <h2>کارهای تاریخ {{ selected_date }}</h2>
+
+        {% if tasks %}
+        <table>
+            <thead>
+                <tr>
+                    <!-- <th>ردیف</th> -->
+                    <th>عنوان</th>
+                    <th class="date-col">تاریخ</th>
+                    <th>پیشرفت</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for task in tasks %}
+                <tr>
+                    <!-- <td>{{ task.id }}</td> -->
+
+                    <td>
+                        {{ task.title }}
+                        {% if task.note %}
+                        <div class="note">{{ task.note }}</div>
+                        {% endif %}
+                    </td>
+
+                    <td class="date-col">
+                        <span class="ltr">{{ task.jalali_date }}</span>
+                    </td>
+
+                    <td>
+                        <span class="ltr">{{ task.progress }}%</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ task.progress }}%;"></div>
+                        </div>
+                    </td>
+
+                    <td>
+                        {% if task.progress == 100 %}
+                        <span class="done-label">✅ تمام شده</span>
+                        {% else %}
+                        <span class="doing-label">در حال انجام</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <div class="actions">
+                            <form class="inline-form" method="post" action="/update/{{ task.id }}">
+                                <input type="hidden" name="date" value="{{ selected_date }}">
+                                <input type="number" name="progress" min="0" max="100" value="{{ task.progress }}"
+                                    style="width: 70px;">
+                                <button type="submit">ثبت درصد</button>
+                            </form>
+
+                            <form class="inline-form" method="post" action="/done/{{ task.id }}">
+                                <input type="hidden" name="date" value="{{ selected_date }}">
+                                <button class="done" type="submit">Done</button>
+                            </form>
+
+                            <form class="inline-form" method="post" action="/delete/{{ task.id }}"
+                                onsubmit="return confirm('این کار حذف شود؟');">
+                                <input type="hidden" name="date" value="{{ selected_date }}">
+                                <button class="delete" type="submit">حذف</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>برای این تاریخ کاری ثبت نشده است.</p>
+        {% endif %}
+    </div>
+</body>
+
+</html>
