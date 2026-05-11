@@ -21,6 +21,7 @@
             padding: 25px;
             border-radius: 16px;
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            overflow-x: auto;
         }
 
         h1 {
@@ -40,6 +41,7 @@
             border-radius: 8px;
             border: 1px solid #ccc;
             margin: 4px;
+            box-sizing: border-box;
         }
 
         input[type="text"],
@@ -86,6 +88,7 @@
             border-collapse: collapse;
             margin-top: 15px;
             direction: rtl;
+            table-layout: fixed;
         }
 
         th,
@@ -93,10 +96,57 @@
             border-bottom: 1px solid #e5e7eb;
             padding: 10px;
             text-align: right;
+            vertical-align: top;
         }
 
         th {
             background: #f8fafc;
+        }
+
+        .edit-col {
+            width: 1%;
+            white-space: nowrap;
+            padding-left: 12px;
+            padding-right: 12px;
+            text-align: center;
+        }
+
+        .title-col {
+            padding-right: 16px;
+        }
+
+        .icon-btn {
+            width: 26px;
+            height: 26px;
+            padding: 0;
+            margin: 0;
+            border-radius: 7px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            font-size: 14px;
+            background: #e2e8f0;
+            color: #111827;
+        }
+
+        .icon-btn:hover {
+            background: #cbd5e1;
+        }
+
+        .status-col {
+            width: 80px;
+            white-space: nowrap;
+        }
+
+        .actions-col {
+            width: 260px;
+        }
+
+        .date-col {
+            min-width: 110px;
+            width: 110px;
+            white-space: nowrap;
         }
 
         .progress-bar {
@@ -129,6 +179,31 @@
             font-size: 13px;
         }
 
+        .task-view.editing .task-view-mode {
+            display: none;
+        }
+
+        .task-view.editing .task-edit-mode {
+            display: block;
+        }
+
+        .task-edit-mode {
+            display: none;
+            margin-top: 8px;
+        }
+
+        .task-edit-mode input[type="text"] {
+            min-width: 0;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .task-edit-mode textarea {
+            width: 100%;
+            max-width: 100%;
+            min-height: 60px;
+        }
+
         .ltr {
             direction: ltr;
             display: inline-block;
@@ -146,10 +221,13 @@
             margin: 0;
         }
 
-        .date-col {
-            min-width: 130px;
-            width: 130px;
-            white-space: nowrap;
+        .actions {
+            gap: 4px;
+        }
+
+        .actions input[type="number"] {
+            width: 62px !important;
+            min-width: 0;
         }
     </style>
 </head>
@@ -205,11 +283,12 @@
             <thead>
                 <tr>
                     <!-- <th>ردیف</th> -->
-                    <th>عنوان</th>
+                    <th class="edit-col"></th>
+                    <th class="title-col">عنوان</th>
                     <th class="date-col">تاریخ</th>
                     <th>پیشرفت</th>
-                    <th>وضعیت</th>
-                    <th>عملیات</th>
+                    <th class="status-col">وضعیت</th>
+                    <th class="actions-col">عملیات</th>
                 </tr>
             </thead>
 
@@ -218,11 +297,31 @@
                 <tr>
                     <!-- <td>{{ task.id }}</td> -->
 
-                    <td>
-                        {{ task.title }}
-                        {% if task.note %}
-                        <div class="note">{{ task.note }}</div>
-                        {% endif %}
+                    <td class="edit-col">
+                        <button class="icon-btn" type="button" data-start-edit data-task-id="{{ task.id }}" title="ویرایش" aria-label="ویرایش">✎</button>
+                    </td>
+
+                    <td class="title-col">
+                        <div class="task-view" data-task-view data-task-id="{{ task.id }}">
+                            <div class="task-view-mode">
+                                <div>{{ task.title }}</div>
+                                {% if task.note %}
+                                <div class="note">{{ task.note }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="task-edit-mode">
+                                <form method="post" action="/edit/{{ task.id }}">
+                                    <input type="hidden" name="date" value="{{ selected_date }}">
+                                    <input type="text" name="title" value="{{ task.title }}" required>
+                                    <br>
+                                    <textarea name="note" placeholder="توضیحات">{{ task.note }}</textarea>
+                                    <br>
+                                    <button type="submit">ذخیره</button>
+                                    <button type="button" data-cancel-edit>انصراف</button>
+                                </form>
+                            </div>
+                        </div>
                     </td>
 
                     <td class="date-col">
@@ -232,11 +331,11 @@
                     <td>
                         <span class="ltr">{{ task.progress }}%</span>
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width: {{ task.progress }}%;"></div>
+                            <div class="progress-fill" data-progress="{{ task.progress }}"></div>
                         </div>
                     </td>
 
-                    <td>
+                    <td class="status-col">
                         {% if task.progress == 100 %}
                         <span class="done-label">✅ تمام شده</span>
                         {% else %}
@@ -244,7 +343,7 @@
                         {% endif %}
                     </td>
 
-                    <td>
+                    <td class="actions-col">
                         <div class="actions">
                             <form class="inline-form" method="post" action="/update/{{ task.id }}">
                                 <input type="hidden" name="date" value="{{ selected_date }}">
@@ -273,6 +372,11 @@
         <p>برای این تاریخ کاری ثبت نشده است.</p>
         {% endif %}
     </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script>
+        DailyTodo.init();
+    </script>
 </body>
 
 </html>

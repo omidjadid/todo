@@ -170,6 +170,28 @@ def update_task(task_id):
     return redirect(url_for("index", date=date))
 
 
+@app.route("/edit/<int:task_id>", methods=["POST"])
+def edit_task(task_id):
+    title = request.form.get("title", "").strip()
+    note = request.form.get("note", "").strip()
+    date = validate_jalali_date(request.form.get("date", "today"))
+
+    if title:
+        conn = connect()
+        conn.execute(
+            """
+            UPDATE tasks
+            SET title = ?, note = ?
+            WHERE id = ?
+            """,
+            (title, note, task_id),
+        )
+        conn.commit()
+        conn.close()
+
+    return redirect(url_for("index", date=date))
+
+
 @app.route("/done/<int:task_id>", methods=["POST"])
 def done_task(task_id):
     date = validate_jalali_date(request.form.get("date", "today"))
