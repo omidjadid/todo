@@ -11,6 +11,18 @@ app = Flask(__name__)
 
 DB_PATH = Path.home() / ".daily_todo.sqlite3"
 
+def wants_json_response() -> bool:
+    return "application/json" in (request.headers.get("accept") or "").lower()
+
+def task_to_dict(row) -> dict:
+    return {
+        "id": row["id"],
+        "title": row["title"],
+        "jalali_date": row["jalali_date"],
+        "progress": row["progress"],
+        "note": row["note"] or "",
+    }
+
 
 def normalize_digits(text: str) -> str:
     text = str(text)
@@ -129,23 +141,32 @@ def add_task():
     progress = clean_progress(request.form.get("progress", 0))
     note = request.form.get("note", "").strip()
 
+    created_task = None
     if title:
         conn = connect()
-        conn.execute(
+        cur = conn.execute(
             """
             INSERT INTO tasks (title, jalali_date, progress, note, created_at)
             VALUES (?, ?, ?, ?, ?)
             """,
-            (
-                title,
-                date,
-                progress,
-                note,
-                str(jdatetime.datetime.now()),
-            ),
+            (title, date, progress, note, str(jdatetime.datetime.now())),
         )
+        task_id = cur.lastrowid
+        created_task = conn.execute(
+            """
+            SELECT id, title, jalali_date, progress, COALESCE(note, '') AS note
+            FROM tasks
+            WHERE id = ?
+            """,
+            (task_id,),
+        ).fetchone()
         conn.commit()
         conn.close()
+
+    if wants_json_response():
+        if not created_task:
+            return jsonify({"ok": False}), 400
+        return jsonify({"ok": True, "task": task_to_dict(created_task), "selected_date": date})
 
     return redirect(url_for("index", date=date))
 
@@ -167,8 +188,7 @@ def update_task(task_id):
     conn.commit()
     conn.close()
 
-    wants_json = "application/json" in (request.headers.get("accept") or "").lower()
-    if wants_json:
+    if wants_json_response():
         return jsonify({"ok": True, "task_id": task_id, "progress": progress})
 
     return redirect(url_for("index", date=date))
@@ -180,6 +200,7 @@ def edit_task(task_id):
     note = request.form.get("note", "").strip()
     date = validate_jalali_date(request.form.get("date", "today"))
 
+    updated_task = None
     if title:
         conn = connect()
         conn.execute(
@@ -190,8 +211,21 @@ def edit_task(task_id):
             """,
             (title, note, task_id),
         )
+        updated_task = conn.execute(
+            """
+            SELECT id, title, jalali_date, progress, COALESCE(note, '') AS note
+            FROM tasks
+            WHERE id = ?
+            """,
+            (task_id,),
+        ).fetchone()
         conn.commit()
         conn.close()
+
+    if wants_json_response():
+        if not updated_task:
+            return jsonify({"ok": False}), 400
+        return jsonify({"ok": True, "task": task_to_dict(updated_task), "selected_date": date})
 
     return redirect(url_for("index", date=date))
 
@@ -212,6 +246,9 @@ def done_task(task_id):
     conn.commit()
     conn.close()
 
+    if wants_json_response():
+        return jsonify({"ok": True, "task_id": task_id, "progress": 100})
+
     return redirect(url_for("index", date=date))
 
 
@@ -229,6 +266,9 @@ def delete_task(task_id):
     )
     conn.commit()
     conn.close()
+
+    if wants_json_response():
+        return jsonify({"ok": True, "task_id": task_id})
 
     return redirect(url_for("index", date=date))
 

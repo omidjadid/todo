@@ -304,10 +304,8 @@
                     <td class="title-col">
                         <div class="task-view" data-task-view data-task-id="{{ task.id }}">
                             <div class="task-view-mode">
-                                <div>{{ task.title }}</div>
-                                {% if task.note %}
-                                <div class="note">{{ task.note }}</div>
-                                {% endif %}
+                                <div data-title-text>{{ task.title }}</div>
+                                <div class="note" data-note-text {% if not task.note %}style="display:none"{% endif %}>{{ task.note }}</div>
                             </div>
 
                             <div class="task-edit-mode">
