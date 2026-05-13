@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 import jdatetime
 
-DB_PATH = Path.home() / ".daily_todo.sqlite3"
+DB_PATH = Path(__file__).parent / ".daily_todo.sqlite3"
 
 
 def normalize_digits(text: str) -> str:

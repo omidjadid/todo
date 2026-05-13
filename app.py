@@ -9,7 +9,7 @@ from flask import Flask, jsonify, render_template, request, redirect, url_for
 
 app = Flask(__name__)
 
-DB_PATH = Path.home() / ".daily_todo.sqlite3"
+DB_PATH = Path(__file__).parent / ".daily_todo.sqlite3"
 
 def wants_json_response() -> bool:
     return "application/json" in (request.headers.get("accept") or "").lower()
