@@ -134,6 +134,26 @@ def index():
     )
 
 
+def compute_stats_for_date(conn, jalali_date: str) -> dict:
+    stats = conn.execute(
+        """
+        SELECT
+            COUNT(*) AS total_count,
+            SUM(CASE WHEN progress = 100 THEN 1 ELSE 0 END) AS done_count,
+            AVG(progress) AS avg_progress
+        FROM tasks
+        WHERE jalali_date = ?
+        """,
+        (jalali_date,),
+    ).fetchone()
+
+    total_count = stats["total_count"] or 0
+    done_count = stats["done_count"] or 0
+    avg_progress = float(stats["avg_progress"] or 0)
+
+    return {"total_count": total_count, "done_count": done_count, "avg_progress": avg_progress}
+
+
 @app.route("/add", methods=["POST"])
 def add_task():
     title = request.form.get("title", "").strip()
@@ -166,7 +186,11 @@ def add_task():
     if wants_json_response():
         if not created_task:
             return jsonify({"ok": False}), 400
-        return jsonify({"ok": True, "task": task_to_dict(created_task), "selected_date": date})
+        # include updated stats for the selected date
+        conn = connect()
+        stats = compute_stats_for_date(conn, date)
+        conn.close()
+        return jsonify({"ok": True, "task": task_to_dict(created_task), "selected_date": date, "stats": stats})
 
     return redirect(url_for("index", date=date))
 
@@ -189,7 +213,11 @@ def update_task(task_id):
     conn.close()
 
     if wants_json_response():
-        return jsonify({"ok": True, "task_id": task_id, "progress": progress})
+        # return updated stats for the date provided
+        conn = connect()
+        stats = compute_stats_for_date(conn, date)
+        conn.close()
+        return jsonify({"ok": True, "task_id": task_id, "progress": progress, "selected_date": date, "stats": stats})
 
     return redirect(url_for("index", date=date))
 
@@ -225,7 +253,10 @@ def edit_task(task_id):
     if wants_json_response():
         if not updated_task:
             return jsonify({"ok": False}), 400
-        return jsonify({"ok": True, "task": task_to_dict(updated_task), "selected_date": date})
+        conn = connect()
+        stats = compute_stats_for_date(conn, date)
+        conn.close()
+        return jsonify({"ok": True, "task": task_to_dict(updated_task), "selected_date": date, "stats": stats})
 
     return redirect(url_for("index", date=date))
 
@@ -247,7 +278,10 @@ def done_task(task_id):
     conn.close()
 
     if wants_json_response():
-        return jsonify({"ok": True, "task_id": task_id, "progress": 100})
+        conn = connect()
+        stats = compute_stats_for_date(conn, date)
+        conn.close()
+        return jsonify({"ok": True, "task_id": task_id, "progress": 100, "selected_date": date, "stats": stats})
 
     return redirect(url_for("index", date=date))
 
@@ -268,7 +302,10 @@ def delete_task(task_id):
     conn.close()
 
     if wants_json_response():
-        return jsonify({"ok": True, "task_id": task_id})
+        conn = connect()
+        stats = compute_stats_for_date(conn, date)
+        conn.close()
+        return jsonify({"ok": True, "task_id": task_id, "selected_date": date, "stats": stats})
 
     return redirect(url_for("index", date=date))
 

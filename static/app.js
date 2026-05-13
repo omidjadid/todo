@@ -66,6 +66,21 @@ const DailyTodo = (() => {
 
         const data = await res.json();
 
+        // If the server included updated stats, apply them to the stat cards
+        if (data && data.stats) {
+          try {
+            const s = data.stats;
+            const totalEl = document.getElementById('stat-total');
+            const doneEl = document.getElementById('stat-done');
+            const avgEl = document.getElementById('stat-avg');
+            if (totalEl) totalEl.textContent = String(s.total_count || 0);
+            if (doneEl) doneEl.textContent = String(s.done_count || 0);
+            if (avgEl) avgEl.textContent = `${Number(s.avg_progress || 0).toFixed(1)}%`;
+          } catch (_e) {
+            // ignore UI update errors
+          }
+        }
+
         // /add
         if (action === "/add") {
           const task = data?.task;

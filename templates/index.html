@@ -246,17 +246,17 @@
         <div class="stats">
             <div class="stat-card">
                 تعداد کارها:
-                <strong>{{ total_count }}</strong>
+                 <strong id="stat-total">{{ total_count }}</strong>
             </div>
 
             <div class="stat-card">
-                کامل‌شده:
-                <strong>{{ done_count }}</strong>
+                 <span>کامل‌شده:</span>
+                 <strong id="stat-done">{{ done_count }}</strong>
             </div>
 
             <div class="stat-card">
-                میانگین پیشرفت:
-                <strong>{{ "%.1f"|format(avg_progress) }}%</strong>
+                 <span>میانگین پیشرفت:</span>
+                 <strong id="stat-avg">{{ "%.1f"|format(avg_progress) }}%</strong>
             </div>
         </div>
 
